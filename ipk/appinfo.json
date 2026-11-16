@@ -1,0 +1,11 @@
+{
+  "id": "com.gamefree24.flutterwebos6",
+  "version": "0.2.1",
+  "vendor": "AlekS",
+  "type": "native",
+  "main": "launch",
+  "title": "AlekS Flutter Test",
+  "icon": "icon.png",
+  "visible": true,
+  "noSplashOnLaunch": true
+}

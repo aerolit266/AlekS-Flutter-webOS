@@ -1,0 +1,10 @@
+.dart_tool/
+build/
+out/
+*.ipk
+*.zip
+*.tar.gz
+*.so
+*.log
+.env
+.env.*
