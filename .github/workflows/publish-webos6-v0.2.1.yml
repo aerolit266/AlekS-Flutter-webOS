@@ -1,0 +1,26 @@
+name: Publish webOS 6 prototype source release
+on:
+  push:
+    branches: [release/webos6-v0.2.1]
+    paths: [.github/workflows/publish-webos6-v0.2.1.yml]
+permissions:
+  contents: write
+jobs:
+  publish:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: aerolit266/AlekS-Flutter-webOS
+      RELEASE_COMMIT: c445ed8fbe28bad78eeae2a75afc9c7fde7cf0eb
+      RELEASE_TAG: webos6-v0.2.1
+    steps:
+      - name: Publish prerelease for the reviewed source commit
+        shell: bash
+        run: |
+          notes="$RUNNER_TEMP/webos6-release-notes.md"
+          gh api "repos/$GH_REPO/contents/docs/RELEASE-webos6-v0.2.1.md?ref=$RELEASE_COMMIT" --jq .content | base64 --decode >"$notes"
+          test -s "$notes"
+          gh release create "$RELEASE_TAG" --target "$RELEASE_COMMIT" \
+            --title 'webOS 6 · прототип 0.2.1' --prerelease --notes-file "$notes"
+          test "$(gh api "repos/$GH_REPO/git/ref/tags/$RELEASE_TAG" --jq .object.sha)" = "$RELEASE_COMMIT"
