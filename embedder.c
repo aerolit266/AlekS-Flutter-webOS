@@ -55,10 +55,26 @@ static void platform_message(const FlutterPlatformMessage *message, void *contex
   }
 }
 
-static void send_key(struct host *host, const SDL_KeyboardEvent *event) {
+/* LG's SDL2 Wayland backend can report raw scancodes in keysym.sym.
+ * A regular keyboard event carries a usable scancode in its own field. */
+static SDL_Keycode navigation_key(const SDL_Keysym *key, bool wayland) {
+  const SDL_Keycode symbol = key->sym;
+  if (!wayland || key->scancode >= SDL_SCANCODE_A) return symbol;
+  switch (symbol) {
+    case SDL_SCANCODE_LEFT: return SDLK_LEFT;
+    case SDL_SCANCODE_RIGHT: return SDLK_RIGHT;
+    case SDL_SCANCODE_UP: return SDLK_UP;
+    case SDL_SCANCODE_DOWN: return SDLK_DOWN;
+    case SDL_SCANCODE_RETURN: return SDLK_RETURN;
+    default: return symbol;
+  }
+}
+
+static void send_key(struct host *host, const SDL_KeyboardEvent *event, bool wayland) {
   if (event->type != SDL_KEYDOWN) return;
+  const SDL_Keycode symbol = navigation_key(&event->keysym, wayland);
   for (size_t i = 0; i < sizeof(keys) / sizeof(keys[0]); i++) {
-    if (event->keysym.sym != keys[i]) continue;
+    if (symbol != keys[i]) continue;
     const uint8_t code = (uint8_t)i;
     FlutterPlatformMessageResponseHandle *response = NULL;
     if (FlutterPlatformMessageCreateResponseHandle(host->engine, key_result,
@@ -101,6 +117,8 @@ static bool run_screen(struct host *host, SDL_Renderer *renderer,
   const Uint32 start = SDL_GetTicks();
   Uint32 frame_time = 0;
   bool test_keys_sent = false;
+  const char *video_driver = SDL_GetCurrentVideoDriver();
+  const bool wayland = video_driver && strcmp(video_driver, "wayland") == 0;
   while (running && SDL_GetTicks() - start < (smoke ? 15000u : 45000u)) {
     __FlutterEngineFlushPendingTasksNow();
     SDL_Event event;
@@ -110,7 +128,7 @@ static bool run_screen(struct host *host, SDL_Renderer *renderer,
            (event.key.keysym.sym == SDLK_ESCAPE || event.key.keysym.sym == SDLK_AC_BACK))) {
         running = false;
       } else if (event.type == SDL_KEYDOWN || event.type == SDL_KEYUP) {
-        send_key(host, &event.key);
+        send_key(host, &event.key, wayland);
       }
     }
 
