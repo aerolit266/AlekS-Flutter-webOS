@@ -4,6 +4,14 @@
 
 Точные версии и контрольные суммы см. в [DEPENDENCIES.md](docs/DEPENDENCIES.md), статус моделей — в [COMPATIBILITY.md](docs/COMPATIBILITY.md). Как прислать проверку на своём LG, описано в [CONTRIBUTING.md](CONTRIBUTING.md).
 
+## Тест на webOS 5.6.2
+
+Скачайте [тестовый ZIP](https://github.com/aerolit266/AlekS-Flutter-webOS/releases/download/webos6-v0.2.2/AlekS-Flutter-webOS5-test-0.2.2.zip) и распакуйте его на ПК. В Linux или WSL запустите `python3 prepare.py`. Скрипт проверит скачанные зависимости и соберёт архив для ТВ. Flutter SDK и компилятор для теста не нужны.
+
+На телевизоре распакуйте полученный архив во временную папку и запустите `sh diagnose.sh` по SSH. При успехе появятся `FLUTTER_FRAME_RENDERED` и `PROBE_RC=0`. Если будет ошибка, приложите полный вывод к отчёту.
+
+Комплект проверен на LG 65NANO896PC с webOS 6.6.0. На webOS 5.6.2 первый прогон ещё предстоит.
+
 ## Сборка
 
 Откройте терминал Linux или WSL2 в корне распакованного архива. Код примера находится в `smoke/lib/main.dart`.
