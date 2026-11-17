@@ -1,0 +1,48 @@
+name: Attach the webOS 5 test kit to 0.2.2
+on:
+  push:
+    branches: [release/webos5-test-kit-0.2.2]
+    paths: [.github/workflows/attach-webos5-test-kit-0.2.2.yml]
+permissions:
+  contents: write
+jobs:
+  attach:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: aerolit266/AlekS-Flutter-webOS
+      TAG: webos6-v0.2.2
+      ASSET: AlekS-Flutter-webOS5-test-0.2.2.zip
+      BLOB: 62091d47cee688a3643f02f0b5ebbf48b8f68f68
+      EXPECTED_SHA256: 1d3c276c5247b7c62b9bc162eefb7d02fcb17de5c64923388dbe935f1eb601d7
+    steps:
+      - name: Publish the verified ZIP and its instructions
+        shell: bash
+        run: |
+          cd "$RUNNER_TEMP"
+          gh api "repos/$GH_REPO/git/blobs/$BLOB" --jq .content | base64 --decode >"$ASSET"
+          printf '%s  %s\n' "$EXPECTED_SHA256" "$ASSET" | sha256sum -c -
+          unzip -tq "$ASSET"
+
+          asset_digest=$(gh release view "$TAG" --json assets --jq '.assets[] | select(.name == env.ASSET) | .digest')
+          if [ -z "$asset_digest" ]; then
+            gh release upload "$TAG" "$ASSET"
+          else
+            test "$asset_digest" = "sha256:$EXPECTED_SHA256"
+          fi
+
+          gh release view "$TAG" --json body --jq .body >notes.md
+          if ! grep -Fq '## Тест на webOS 5.6.2' notes.md; then
+            cat >>notes.md <<'NOTES'
+
+          ## Тест на webOS 5.6.2
+
+          Скачайте [AlekS-Flutter-webOS5-test-0.2.2.zip](https://github.com/aerolit266/AlekS-Flutter-webOS/releases/download/webos6-v0.2.2/AlekS-Flutter-webOS5-test-0.2.2.zip). В комплекте скомпилированное демо, инструкция и скрипт подготовки. На ПК в Linux или WSL запустите `python3 prepare.py`. Он скачает и проверит зависимости и соберёт архив для ТВ. Flutter SDK для теста не нужен.
+
+          Распакуйте получившийся `.tar.gz` во временной папке на телевизоре и запустите `sh diagnose.sh` по SSH. Первый кадр в памяти подтверждают `FLUTTER_FRAME_RENDERED` и `PROBE_RC=0`. При ошибке приложите полный вывод.
+
+          Комплект проверен на LG 65NANO896PC с webOS 6.6.0. Первый запуск на ARMv7 с webOS 5.6.2 ещё предстоит.
+          NOTES
+            gh release edit "$TAG" --notes-file notes.md
+          fi
